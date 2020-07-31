@@ -20,7 +20,7 @@ mp = mapping.Mapping()
 tr = trials.Trial(9)
 
 # Extract timing of electrophysiological stimulus
-stm = tr.stimuli()['P_VL']
+stm = tr.stimuli()['P_VL'] 
 tt, t_unit = stm.timestamps()
 ii, i_unit = stm.trace()
 
@@ -35,7 +35,7 @@ plt.ylabel(f'dF/F (‰) / stimulus ({i_unit})')
 tt = tr.vsd().timestamps()[0]
 
 # Find ROI associated with cell DE-3(R)
-roiid = mp.mapCanonicalNameToROIID('3_R')
+roiid = mp.mapCanonicalNameToROIID('3_R') 
 
 # Extract VSD trace from cell DE-3(R)
 dff = tr.vsd().trace(roiid)[0]                                               
@@ -78,10 +78,10 @@ for tid in pretrees.keys():
     if roi is not None:
         roimap[roi] = tid
         syncount[roi] = pretrees[tid][0]
-        
+
 # Get ROI IDs in order of decreasing synapse counts
 rois = list(syncount.keys())
-counts = [ syncount[roi] for roi in rois ]
+counts = [syncount[roi] for roi in rois]
 ordr = np.argsort(counts)
 rois = [rois[k] for k in ordr][::-1]
 counts = [counts[k] for k in ordr][::-1]
@@ -157,3 +157,106 @@ plt.xlabel('Distance (μm)')
 plt.ylabel('Synapse count')
 plt.title('Postsynaptic distance along tree for synapses from DI-1(R) onto DE-3(R)')
 
+
+
+################ Extracting Functional Data #################################
+trial_number = 6 # [6,8(crawl)] swim [9, 10, 11, 12] local bend  [15, 17] crawl
+tr = trials.Trial(trial_number)
+# is ROI  region of interest
+# is dF/F (‰, 0.1 percent per mille) the units for VSD imaging, changes in membrane potential units
+
+# VSD Timestamps
+tt = tr.vsd().timestamps()[0]
+
+# Find ROI associated with cell DE-3(R)
+roiid = mp.mapCanonicalNameToROIID('3_R')
+
+# Extract VSD trace from cell DE-3(R)
+dff = tr.vsd().trace(roiid)[0]    
+
+
+
+
+
+
+
+# if local bend trial specific: 
+# Extract timing of electrophysiological stimulus
+stm = tr.stimuli()['P_VL'] 
+tt, t_unit = stm.timestamps()
+ii, i_unit = stm.trace()
+
+# Plot the stimulus
+plt.interactive(True)
+plt.figure()
+plt.plot(tt, ii)
+plt.xlabel(f'Time ({t_unit})')
+plt.ylabel(f'dF/F (‰) / stimulus ({i_unit})')
+
+# Plot the VSD trace over the stimulus
+plt.plot(tt, dff*10)
+plt.title(f'VSD trace of DE-3(R) during local bend trial #{trial_number}')
+# end local bend trial specific
+
+
+
+
+
+
+# Plot the trace
+plt.interactive(True)
+plt.figure()
+plt.plot(tt, dff)
+plt.xlabel('Time (s)')
+plt.ylabel('dF/F (%)')
+plt.title(f'VSD trace of DE-3(R) during [behavior] trial #{trial_number}')
+
+# Get list of all trees presynaptic to DE-3
+pretrees = db.presyntrees()
+
+# Construct a dict of ROI IDs associated with those trees and a dict mapping
+# ROI IDs to synapse counts
+roimap = {}
+syncount = {}
+for tid in pretrees.keys():
+    roi = mp.mapTreeIDToROIID(tid)
+    if roi is not None:
+        roimap[roi] = tid
+        syncount[roi] = pretrees[tid][0]
+
+# Get ROI IDs in order of decreasing synapse counts
+rois = list(syncount.keys())
+counts = [syncount[roi] for roi in rois]
+ordr = np.argsort(counts)
+rois = [rois[k] for k in ordr][::-1]
+counts = [counts[k] for k in ordr][::-1]
+
+# Retrieve identity of most highly connected neuron
+name = mp.mapROIIDToCanonicalName(rois[0])
+
+# Plot its activity over the previous trace
+dff=tr.vsd().trace(rois[0])[0]                                   
+plt.plot(tt, dff)
+plt.xlabel('Time (s)')
+plt.ylabel('dF/F (%)')
+plt.title(f'VSD trace of DE-3(R) and {name} during swim trial #{trial_number}')
+
+
+# Use Geo example #2 to look at synaptic locations
+
+
+
+''' 
+
+How to input into a NN?
+
+1st: need to determine if we have enough data to train a NN to be accurate, how large is our data 
+
+segment current data into mutliple data
+
+2nd: input is synaptic data (firing patterns, clusters, evolution over timestamps, presynaptic --> need to expand and double check I understand how to extract these --> matrix format
+
+3rd: output is behavior [swimming, crawling, local bend (VL), local bend (VR)]     expect close to [1,0,0,0] to identify behavior   should local bending be grouped together?
+
+
+'''
