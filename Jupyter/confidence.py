@@ -80,8 +80,8 @@ class Confidence:
         '''TRACINGCONFIDENCEFORTREE - Return the (subjective) confidence
         in tracing for the given tree ID as a percentage value. Only
         trees that are presynaptic to DE-3(R) are rated; others return None.'''
-        if tid in self.gmapconf:
-            return self.gmapconf[tid]
+        if tid in self.sbemconf:
+            return self.sbemconf[tid]
         else:
             return 0
 
