@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import numpy as np
 import h5py
 import errno
@@ -289,3 +291,4 @@ class Coherence:
                 else:
                     self.roiids.append(chr(ord('a') + (n//26-1))
                                        + chr(ord('a') + (n%26)))
+                    

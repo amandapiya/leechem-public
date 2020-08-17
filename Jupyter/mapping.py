@@ -51,6 +51,9 @@ class Mapping:
             tname = l[6]
             if can=='':
                 can = None
+            if roiid=='':
+                roiid = None
+                roi = None
             if roi is not None:
                 self.roi2can[roi] = can
                 self.roi2uct[roi] = uct

@@ -80,6 +80,16 @@ class SBEMDB:
         z = self.slicetoum(z)
         return (x, y, z, nid)
 
+    def onenodexyz(self, nid):
+        '''ONENODEXYZ - Get location of a single node
+        (x, y, z) = ONENODEXYZ(nid) returns the location of the given node.
+        The result is in microns'''
+        x,y,z,nid = self.nodexyz(f'nid={nid}')
+        if len(x):
+            return x[0], y[0], z[0]
+        else:
+            raise ValueError(f'No such node: {nid}')
+
     def somaxyz(self, tid):
         '''SOMAXYZ - Get soma location and node ID
         (x, y, z, nid) = SOMAXYZ(tid) returns the soma location and node ID
@@ -301,7 +311,6 @@ class SBEMDB:
         if len(res) != 1:
             raise KeyError(f'Node {nid} not found')
         tid = res[0][0]
-        print(tid)
         res = self.fetch(f'''select
            n1.x, n1.y, n1.z, n1.nid, n2.x, n2.y, n2.z, n2.nid
            from nodes as n1
@@ -333,3 +342,41 @@ class SBEMDB:
                         distances[n] = dst + d
             frontier = newfrontier
         return distances
+
+    def nodeToEdgeDistance(self, nid, nid1, nid2):
+        '''NODETOEDGEDISTANCE - Distance between node and an edge 
+        NODETOEDGEDISTANCE(nid, nid1, nid2) returns the distance between 
+        the node defined by NID and the EDGE defined by the two nodes 
+        NID1 and NID2. The result is expressed in microns.'''
+        p = self.onenodexyz(nid)
+        p1 = self.onenodexyz(nid1)
+        p2 = self.onenodexyz(nid2)
+        def dif(pa, pb):
+            return [pa[k] - pb[k] for k in range(3)]
+        def inner(a, b):
+            return sum([a[k]*b[k] for k in range(3)])
+        def addmul(p, dp, t):
+            return [p[k] + t*dp[k] for k in range(3)]
+        def length(dp):
+            return np.sqrt(inner(dp,dp))
+        # Let P, P1, P2 be the points (x,y,z), (x1,y1,z1) and (x2,y2,z2)
+        # The line segment is defined by
+        # P' = P1 + T (P2-P1)
+        # We are seeking the value of T that minimizes D := ||P' - P||
+        # constrained by 0 <= T <= 1.
+        # Find that by demanding that d(D²)/dT = 0:
+        #    D² = sum_i [ P1_i + T (P2_i - P1_i) - P_i ]²,
+        # where i iterates over x, y, z. Thus:
+        #   0 = sum_i [ P1_i + T (P2_i - P1_i) - P_i ] [P2_i - P1_i].
+        # Separting terms with and without T is easy.
+        #   0 = sum_i [P1_i - P_i][P2_i - P1_i] + T sum_i[P2_i - P1_i]^2
+        dif1 = dif(p1, p)
+        dif2 = dif(p2, p1)
+        t = -inner(dif1, dif2) / inner(dif2, dif2)
+        if t<0:
+            t = 0
+        elif t>1:
+            t = 1
+        pp = addmul(p1, dif2, t)
+        return length(dif(p, pp))
+    
